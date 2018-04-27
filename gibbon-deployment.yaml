@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gibbon
+  labels:
+    app: gibbon
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: gibbon
+    tier: frontend
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-gibbon
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: sc-gibbon
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-gibbondata
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: sc-gibbondata
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: gibbon
+  labels:
+    app: gibbon
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: gibbon
+        tier: frontend
+    spec:
+      containers:
+      - image: dstafford9999/frontend-web
+        imagePullPolicy: Always
+        name: gibbon
+        ports:
+        - containerPort: 80
+          name: gibbon
+        volumeMounts:
+        - name: sc-gibbon
+          mountPath: /var/www/core
+        - name: sc-gibbondata
+          mountPath: /var/www/uploads
+      volumes:
+      - name: sc-gibbon
+        persistentVolumeClaim:
+          claimName: pvc-gibbon
+      - name: sc-gibbondata
+        persistentVolumeClaim:
+          claimName: pvc-gibbondata
